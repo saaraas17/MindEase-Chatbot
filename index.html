@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>MindEase Mental Health Chatbot</title>
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #74ebd5, #ACB6E5);
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+        }
+
+        .container {
+            max-width: 820px;
+            margin: 30px auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            height: 88vh;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4a90e2, #6a5acd);
+            color: white;
+            padding: 18px;
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .chat-box {
+            flex: 1;
+            padding: 18px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            background: #f8fafc;
+        }
+
+        .message {
+            margin: 10px 0;
+            padding: 12px 16px;
+            border-radius: 14px;
+            max-width: 75%;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+
+        .user {
+            background: linear-gradient(135deg, #d4fc79, #96e6a1);
+            align-self: flex-end;
+            margin-left: auto;
+        }
+
+        .bot {
+            background: #e9ecef;
+            align-self: flex-start;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .input-area {
+            display: flex;
+            gap: 10px;
+            padding: 14px;
+            border-top: 1px solid #ddd;
+            background: white;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #ccc;
+            font-size: 16px;
+            outline: none;
+            transition: border 0.2s ease;
+        }
+
+        input:focus {
+            border-color: #4a90e2;
+        }
+
+        button {
+            padding: 11px 16px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 15px;
+            font-weight: 600;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        button:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+
+        #sendBtn {
+            background-color: #4a90e2;
+            color: white;
+        }
+
+        #voiceBtn {
+            background-color: #28a745;
+            color: white;
+        }
+
+        #assessBtn {
+            background-color: #ff9800;
+            color: white;
+        }
+
+        .listening {
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(40,167,69, 0.6); }
+            70% { box-shadow: 0 0 0 10px rgba(40,167,69, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(40,167,69, 0); }
+        }
+
+        .typing {
+            font-style: italic;
+            color: #888;
+            margin-top: 6px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <div class="header">
+        🧠 MindEase Mental Health Assistant
+    </div>
+
+    <div id="chatBox" class="chat-box"></div>
+
+    <div class="input-area">
+
+        <input
+            id="userInput"
+            type="text"
+            placeholder="Type or speak your message..."
+            onkeypress="handleKey(event)"
+        >
+
+        <button id="sendBtn" onclick="sendMessage()">
+            Send
+        </button>
+
+        <button id="voiceBtn">
+            🎤 Speak
+        </button>
+
+        <button id="assessBtn" onclick="getAssessment()">
+            Assess
+        </button>
+
+    </div>
+
+</div>
+
+<script>
+
+let messages = [];
+
+function addMessage(text, sender) {
+
+    const chatBox = document.getElementById("chatBox");
+
+    const msgDiv = document.createElement("div");
+
+    msgDiv.classList.add("message");
+    msgDiv.classList.add(sender);
+
+    msgDiv.textContent = text;
+
+    chatBox.appendChild(msgDiv);
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function showTyping() {
+
+    const chatBox = document.getElementById("chatBox");
+
+    const typingDiv = document.createElement("div");
+
+    typingDiv.id = "typing";
+    typingDiv.classList.add("typing");
+
+    typingDiv.textContent = "MindEase is typing...";
+
+    chatBox.appendChild(typingDiv);
+
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function removeTyping() {
+
+    const typingDiv = document.getElementById("typing");
+
+    if (typingDiv) {
+        typingDiv.remove();
+    }
+}
+
+function sendMessage() {
+
+    const input = document.getElementById("userInput");
+
+    const text = input.value.trim();
+
+    if (!text) return;
+
+    addMessage(text, "user");
+
+    messages.push({ role: "user", content: text });
+
+    input.value = "";
+
+    showTyping();
+
+    fetch("/chat", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ messages: messages })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        removeTyping();
+
+        addMessage(data.response, "bot");
+
+        messages.push({ role: "assistant", content: data.response });
+
+    })
+    .catch(err => {
+
+        removeTyping();
+
+        console.error(err);
+
+        addMessage("Error connecting to server.", "bot");
+    });
+}
+
+function getAssessment() {
+
+    showTyping();
+
+    fetch("/assess", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ messages: messages })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        removeTyping();
+
+        addMessage(data.response, "bot");
+
+    })
+    .catch(err => {
+
+        removeTyping();
+
+        console.error(err);
+
+        addMessage("Error generating assessment.", "bot");
+    });
+}
+
+function handleKey(event) {
+
+    if (event.key === "Enter") {
+        sendMessage();
+    }
+}
+
+// =============================
+// VOICE RECOGNITION
+// =============================
+
+const voiceBtn = document.getElementById("voiceBtn");
+
+voiceBtn.addEventListener("click", () => {
+
+    const SpeechRecognition =
+        window.SpeechRecognition ||
+        window.webkitSpeechRecognition;
+
+    if (!SpeechRecognition) {
+        alert("Speech recognition not supported. Use Chrome or Edge.");
+        return;
+    }
+
+    const recognition = new SpeechRecognition();
+
+    recognition.lang = "en-US";
+
+    recognition.start();
+
+    voiceBtn.textContent = "🎤 Listening...";
+    voiceBtn.classList.add("listening");
+
+    recognition.onresult = function(event) {
+
+        const transcript =
+            event.results[0][0].transcript;
+
+        document.getElementById("userInput").value = transcript;
+
+        voiceBtn.textContent = "🎤 Speak";
+        voiceBtn.classList.remove("listening");
+
+        sendMessage();
+    };
+
+    recognition.onerror = function(event) {
+
+        voiceBtn.textContent = "🎤 Speak";
+        voiceBtn.classList.remove("listening");
+
+        alert("Voice error: " + event.error);
+    };
+
+    recognition.onend = function() {
+
+        voiceBtn.textContent = "🎤 Speak";
+        voiceBtn.classList.remove("listening");
+    };
+});
+
+// Initial greeting
+
+window.onload = function() {
+
+    const greeting =
+        "Hi there! 😊 I'm MindEase. How are you feeling today?";
+
+    addMessage(greeting, "bot");
+
+    messages.push({ role: "assistant", content: greeting });
+};
+
+</script>
+
+</body>
+</html>
