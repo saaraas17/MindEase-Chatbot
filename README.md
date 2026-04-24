@@ -86,6 +86,8 @@ Go to: **http://localhost:5000**
 - 🔄 Reset and start a new session anytime
 
 ## Notes
-- Voice input works best in Chrome or Edge
-- The app uses Claude claude-sonnet-4-20250514 (claude-sonnet-4-20250514)
-- Not a substitute for professional mental health care
+* Voice input functionality works best in modern browsers such as Chrome or Edge.
+* The chatbot uses an external AI language model via API to generate conversational responses and perform mental health assessment.
+* This application is developed for educational and awareness purposes only.
+* This system is not a substitute for professional mental health care, diagnosis, or treatment.
+
